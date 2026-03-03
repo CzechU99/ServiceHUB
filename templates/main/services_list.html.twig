@@ -9,13 +9,13 @@
 {% block body %}
     <div id="search">
 
-      {{ form_start(wyszukiwanieForm, {'action': path('app_filtrowane_uslugi_list')}) }}
+      {{ form_start(searchForm, {'action': path('app_filtrowane_uslugi_list')}) }}
 
         <div id="wyszukaj">
 
-          {{ form_widget(wyszukiwanieForm.nazwaUslugi, {'attr': {'class': 'nazwa', 'placeholder': 'ZNAJDŹ COŚ, CO CIĘ INTERESUJE'}}) }}
+          {{ form_widget(searchForm.nazwaUslugi, {'attr': {'class': 'nazwa', 'placeholder': 'ZNAJDŹ COŚ, CO CIĘ INTERESUJE'}}) }}
           <div id="kreska_pion"></div>
-          {{ form_widget(wyszukiwanieForm.lokalizacja, {'attr': {'class': 'lokalizacja2', 'placeholder': 'LOKALIZACJA'}}) }}
+          {{ form_widget(searchForm.lokalizacja, {'attr': {'class': 'lokalizacja2', 'placeholder': 'LOKALIZACJA'}}) }}
           <div id="suggestions"></div>
           <button type="submit" class="done anim">WYSZUKAJ</button>
 
@@ -30,15 +30,15 @@
             </div>
             <div id="inputy">
 
-              {{ form_widget(wyszukiwanieForm.kategorie, {'attr': {'class': 'kat_input'}}) }}
+              {{ form_widget(searchForm.kategorie, {'attr': {'class': 'kat_input'}}) }}
 
                 <div id="cena_input">
-                  {{ form_widget(wyszukiwanieForm.cenaMin, {'attr': {'class': 'price', 'placeholder': 'MIN'}}) }}
-                  {{ form_widget(wyszukiwanieForm.cenaMax, {'attr': {'class': 'price ml', 'placeholder': 'MAX'}}) }}
+                  {{ form_widget(searchForm.cenaMin, {'attr': {'class': 'price', 'placeholder': 'MIN'}}) }}
+                  {{ form_widget(searchForm.cenaMax, {'attr': {'class': 'price ml', 'placeholder': 'MAX'}}) }}
                 </div>
 
                 <div id="km_input">
-                  {{ form_widget(wyszukiwanieForm.dystans, {'attr': {'class': 'km', 'placeholder': '+0KM'}}) }}
+                  {{ form_widget(searchForm.dystans, {'attr': {'class': 'km', 'placeholder': '+0KM'}}) }}
                 </div>
 
                 <a href="{{ path('app_filter_reset') }}"><div class="done2 reset anim2">WYCZYŚĆ</div></a>
@@ -46,7 +46,7 @@
             </div>
         </div>
 
-      {{ form_end(wyszukiwanieForm) }}
+      {{ form_end(searchForm) }}
 
     </div>
 
@@ -62,8 +62,8 @@
     
     </div>
 
-    <div id="list" class="{% if uslugi|length == 0 %}last{% endif %}">
-        <div id="number">ZNALEZIONO {{ uslugi|length }} OGŁOSZEŃ</div>
+    <div id="list" class="{% if services|length == 0 %}last{% endif %}">
+      <div id="number">ZNALEZIONO {{ services|length }} OGŁOSZEŃ</div>
         <div id="kreska"></div>
         <div id="reklama">REKLAMA</div>
         <div id="okno">MIEJSCE DLA REKLAMODAWCY</div>
@@ -73,41 +73,41 @@
 
     <div class="container">
     
-      {% for usluga in uslugi %}
-        <a class="link" href="{{ path('app_service_view', {idUslugi: usluga.id}) }}">
+      {% for service in services %}
+        <a class="link" href="{{ path('app_service_view', {idUslugi: service.id}) }}">
           <div class="ogloszenie 
-            {% if uslugi|length == 1 %}
+            {% if services|length == 1 %}
               top last
-            {% elseif loop.first and uslugi|length == 2 %}
+            {% elseif loop.first and services|length == 2 %}
               top
-            {% elseif loop.last and uslugi|length == 2 %}
+            {% elseif loop.last and services|length == 2 %}
               last
-            {% elseif loop.first and uslugi|length >= 3 %}
+            {% elseif loop.first and services|length >= 3 %}
               top
-            {% elseif loop.last and uslugi|length >= 3 %}
+            {% elseif loop.last and services|length >= 3 %}
               last
             {% endif %}">
             
-            {% set imagePath = 'zdjeciaUslug/' ~ usluga.uzytkownik.id ~ '/' ~ usluga.id ~ '/' ~ usluga.glowneZdjecie %}
+            {% set imagePath = 'zdjeciaUslug/' ~ service.uzytkownik.id ~ '/' ~ service.id ~ '/' ~ service.glowneZdjecie %}
             <div class="center">
               <img class="zdjecie" src="{{ asset(imagePath) }}" onerror="this.src='{{ asset("images/alt_image.jpg") }}'" alt="Brak zdjęcia!">
             </div>
 
             <div class="opis">
-              <div class="tytul">{{ usluga.nazwaUslugi|upper }}</div>
-              <div class="lokalizacja">{{ usluga.uzytkownik.daneUzytkownika.miasto|upper }}</div>
-              <div class="data">DODANO {{ usluga.dataDodania|date('d.m.Y') }}</div>
+              <div class="tytul">{{ service.nazwaUslugi|upper }}</div>
+              <div class="lokalizacja">{{ service.uzytkownik.daneUzytkownika.miasto|upper }}</div>
+              <div class="data">DODANO {{ service.dataDodania|date('d.m.Y') }}</div>
             </div>
             <div class="prawo">
               
               <div class="follow">
-                <a href="{{ path('app_follow', {idFollow: usluga.id}) }}">
+                <a href="{{ path('app_follow', {idFollow: service.id}) }}">
                   
                   {% if app.user %}
                     {% set found = false %}
-                    {% if obserwowane %}
-                      {% for obserwacja in obserwowane %}
-                        {% if obserwacja.usluga.id == usluga.id %}
+                    {% if observedItems %}
+                      {% for observed in observedItems %}
+                        {% if observed.usluga.id == service.id %}
                           {% set found = true %}
                         {% endif %}
                       {% endfor %}
@@ -123,7 +123,7 @@
                 </a>
               </div>
               
-              <div class="cena">{{ usluga.cena }} PLN{% if usluga.czyStawkaGodzinowa %}/H{% endif %}</div>
+              <div class="cena">{{ service.cena }} PLN{% if service.czyStawkaGodzinowa %}/H{% endif %}</div>
 
             </div>
           </div>

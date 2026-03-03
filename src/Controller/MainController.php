@@ -2,22 +2,20 @@
 
 namespace App\Controller;
 
+use App\Entity\User;
 use App\Entity\Rezerwacje;
-use App\Entity\Obserwowane;
 use App\Form\RezerwacjaFormType;
-use App\Service\GeocoderService;
-use Symfony\Component\Mime\Email;
 use App\Form\WyszukiwanieFormType;
 use App\Repository\UserRepository;
 use App\Repository\UslugiRepository;
+use App\Service\ReservationService;
+use App\Service\ObservedService;
+use App\Service\ServiceFilterService;
 use App\Form\SzybkieSzukanieFormType;
 use App\Repository\KategorieRepository;
 use App\Repository\RezerwacjeRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use App\Repository\ObserwowaneRepository;
-use App\Repository\DaneUzytkownikaRepository;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -27,369 +25,221 @@ class MainController extends AbstractController
 {
     #[Route('/main', name: 'app_main')]
     public function index(
-        UserRepository $user,
-        UslugiRepository $uslugi,
-        RezerwacjeRepository $rezerwacje,
+        UserRepository $userRepository,
+        UslugiRepository $serviceRepository,
+        RezerwacjeRepository $reservationRepository,
     ): Response
     {
+        $allServices = $serviceRepository->findAll();
+        $users = $userRepository->findAll();
+        $reservations = $reservationRepository->findAll();
 
-        $wszystkieUslugi = $uslugi->findAll();
-        $uzytkownicy = $user->findAll();
-        $rezerwacje = $rezerwacje->findAll();
+        $shuffledServices = $serviceRepository->findAll();
+        shuffle($shuffledServices);
+        $randomServices = array_slice($shuffledServices, 0, 4);
 
-        $wymieszaneUslugi = $uslugi->findAll();
-        shuffle($wymieszaneUslugi);
-        $losoweUslugi = array_slice($wymieszaneUslugi, 0, 4);
-
-        $form = $this->createForm(SzybkieSzukanieFormType::class);
+        $quickSearchForm = $this->createForm(SzybkieSzukanieFormType::class);
 
         return $this->render('main/index.html.twig', [
-            'szybkieSzukanieForm' => $form->createView(),
-            'uzytkownicy' => $uzytkownicy,
-            'wszystkieUslugi' => $wszystkieUslugi,
-            'rezerwacje' => $rezerwacje,
-            'losoweUslugi' => $losoweUslugi
+            'quickSearchForm' => $quickSearchForm->createView(),
+            'users' => $users,
+            'allServices' => $allServices,
+            'reservations' => $reservations,
+            'randomServices' => $randomServices
         ]);
-
     }
 
     #[Route('/skills_list', name: 'app_skills_list')]
     public function skillsList(
-        UslugiRepository $uslugi,
+        UslugiRepository $serviceRepository,
         Request $request,
-        KategorieRepository $kategorie,
-        ObserwowaneRepository $obserwowane,
+        KategorieRepository $categoryRepository,
+        ObserwowaneRepository $observedRepository,
+        ServiceFilterService $serviceFilterService,
     ): Response
     {
+        $searchForm = $this->createForm(WyszukiwanieFormType::class);
 
-        $form = $this->createForm(WyszukiwanieFormType::class);
+        $quickSearchForm = $this->createForm(SzybkieSzukanieFormType::class);
+        $quickSearchForm->handleRequest($request);
 
-        $szybkiFormularz = $this->createForm(SzybkieSzukanieFormType::class);
-        $szybkiFormularz->handleRequest($request);
+        $user = $this->getUser();
 
-        $user = $this->getUser(); 
-        $queryBuilder  = $uslugi->createQueryBuilder('u');
-        if($user){
-            $userId = $user->getId();
-            $queryBuilder
-                ->andWhere('u.uzytkownik != :userId')
-                ->setParameter('userId', $userId);
+        $allCategories = $categoryRepository->findAll();
+
+        if ($quickSearchForm->isSubmitted() && $quickSearchForm->isValid()) {
+            $searchTerm = $quickSearchForm->get('nazwaUslugi')->getData();
+        } else {
+            $searchTerm = '';
         }
 
-        $wszystkieKategorie = $kategorie->findAll();
+        $filteredServices = $serviceFilterService->getServicesForSkillsList(
+            $serviceRepository,
+            $user instanceof User ? $user : null,
+            $searchTerm
+        );
 
-        if ($szybkiFormularz->isSubmitted() && $szybkiFormularz->isValid()) {
-            $searchTerm = $szybkiFormularz->get('nazwaUslugi')->getData();
-
-            $queryBuilder 
-                ->andWhere('u.nazwaUslugi LIKE :searchTerm')
-                ->setParameter('searchTerm', '%' . $searchTerm . '%');
-
+        if($user instanceof User){
+            $observedByUser = $observedRepository->findBy(['uzytkownik' => $user->getId()]);
         }else{
-            $searchTerm = "";
+            $observedByUser = [];
         }
 
-        $filteredUslugi = $queryBuilder->getQuery()->getResult();
+        $searchForm->get('nazwaUslugi')->setData($searchTerm);
 
-        if($user){
-            $obserwowanePrzezUzytkownika = $obserwowane->findBy(['uzytkownik' => $this->getUser()->getId()]);
-        }else{
-            $obserwowanePrzezUzytkownika = [];
-        }
-
-
-        $form->get('nazwaUslugi')->setData($searchTerm);
-
-        return $this->render('main/skills_list.html.twig', [
-            'wyszukiwanieForm' => $form->createView(),
-            'uslugi' => $filteredUslugi,
-            'daneUzytkownika' => $searchTerm,
-            'kategorie' => $wszystkieKategorie,
-            'obserwowane' => $obserwowanePrzezUzytkownika,
+        return $this->render('main/services_list.html.twig', [
+            'searchForm' => $searchForm->createView(),
+            'services' => $filteredServices,
+            'searchTerm' => $searchTerm,
+            'categories' => $allCategories,
+            'observedItems' => $observedByUser,
         ]);
-
     }
 
     #[Route('/filtrowane_uslugi_list', name: 'app_filtrowane_uslugi_list')]
-    public function filtrowaneUslugiList(
-        UslugiRepository $uslugi,
+    public function filteredServicesList(
+        UslugiRepository $serviceRepository,
         Request $request,
-        KategorieRepository $kategorie,
-        GeocoderService $geocoderService,
-        EntityManagerInterface $entityManager
+        KategorieRepository $categoryRepository,
+        ServiceFilterService $serviceFilterService,
     ): Response
     {
+        $searchForm = $this->createForm(WyszukiwanieFormType::class);
+        $searchForm->handleRequest($request);
 
-        $form = $this->createForm(WyszukiwanieFormType::class);
-        $form->handleRequest($request);
+        $filteredServices = $serviceRepository->findAll();
+        $allCategories = $categoryRepository->findAll();
 
-        $filteredUslugi = $uslugi->findAll();
-        $wszystkieKategorie = $kategorie->findAll();
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            
-            $data = $form->getData();
-
-            $uslugiQuery = $uslugi->createQueryBuilder('u')
-                ->leftJoin('u.kategorie', 'k') 
-                ->leftJoin('u.uzytkownik', 'us')
-                ->leftJoin('us.daneUzytkownika', 'd') 
-                ->where('u.nazwaUslugi LIKE :nazwa')
-                ->setParameter('nazwa', '%' . $data['nazwaUslugi'] . '%');
-
-            if ($data['cenaMin']) {
-                $uslugiQuery->andWhere('u.cena >= :cenaMin')
-                    ->setParameter('cenaMin', $data['cenaMin']);
-            }
-
-            if ($data['cenaMax']) {
-                $uslugiQuery->andWhere('u.cena <= :cenaMax')
-                    ->setParameter('cenaMax', $data['cenaMax']);
-            }
-
-            if ($data['kategorie']) {
-                $uslugiQuery->andWhere('k.id = :kategorie')
-                    ->setParameter('kategorie', $data['kategorie']);
-            }
-
-            if ($data['lokalizacja']) {
-                $lokalizacja = $data['lokalizacja'];
-
-                $commaPosition = strpos($lokalizacja, ',');
-
-                if ($commaPosition !== false) {
-                    $lokalizacja = substr($lokalizacja, 0, $commaPosition);
-                }
-
-                $connection = $entityManager->getConnection();
-
-                if($data['dystans']){
-                
-                    $coordinates = $geocoderService->geocode($lokalizacja);
-
-                    if($coordinates){
-
-                        $sql = '
-                            SELECT * FROM dane_uzytkownika WHERE ST_Distance_Sphere(POINT(dlugosc_geograficzna, szerokosc_geograficzna), POINT(:longitude, :latitude)) <= :distance
-                        ';
-
-                        $stmt = $connection->prepare($sql);
-
-                        $result = $stmt->executeQuery([
-                            'longitude' => $coordinates['longitude'],  
-                            'latitude' => $coordinates['latitude'],
-                            'distance' => ($data['dystans'] * 1000) * 0.80,  
-                        ]);
-
-                    }
-
-                }else{
-                
-                    $sql = 'SELECT * FROM dane_uzytkownika WHERE miasto = :lokalizacja';
-
-                    $stmt = $connection->prepare($sql);
-
-                    $result = $stmt->executeQuery([
-                        'lokalizacja' => $lokalizacja,  
-                    ]);
-                
-                }
-
-                $uslugiFiltered = $result->fetchAllAssociative();
-
-                $uzytkownikIds = array_column($uslugiFiltered, 'uzytkownik_id');
-
-                $filteredUslugi = $uslugiQuery
-                    ->andWhere('u.uzytkownik IN (:uzytkownikIds)')
-                    ->setParameter('uzytkownikIds', $uzytkownikIds);
-
-            }
-
-            $filteredUslugi = $uslugiQuery->getQuery()->getResult();
-
+        if ($searchForm->isSubmitted() && $searchForm->isValid()) {
+            $filtersData = $searchForm->getData();
+            $filteredServices = $serviceFilterService->getFilteredServices($filtersData, $serviceRepository);
         }
 
-        return $this->render('main/skills_list.html.twig', [
-            'wyszukiwanieForm' => $form->createView(),
-            'uslugi' => $filteredUslugi,
-            'kategorie' => $wszystkieKategorie,
+        return $this->render('main/services_list.html.twig', [
+            'searchForm' => $searchForm->createView(),
+            'services' => $filteredServices,
+            'categories' => $allCategories,
+            'observedItems' => [],
         ]);
-
     }
 
     #[Route('/filter_reset', name: 'app_filter_reset')]
     public function filterReset(
-        UserRepository $user,
-        UslugiRepository $uslugi,
-        KategorieRepository $kategorie
+        UslugiRepository $serviceRepository,
+        KategorieRepository $categoryRepository
     ): Response
     {
+        $allServices = $serviceRepository->findAll();
+        $allCategories = $categoryRepository->findAll();
 
-        $wszystkieUslugi = $uslugi->findAll();
-        $wszystkieKategorie = $kategorie->findAll();
+        $searchForm = $this->createForm(WyszukiwanieFormType::class);
 
-        $form = $this->createForm(WyszukiwanieFormType::class);
-
-        return $this->render('main/skills_list.html.twig', [
-            'wyszukiwanieForm' => $form->createView(),
-            'uslugi' => $wszystkieUslugi,
-            'kategorie' => $wszystkieKategorie,
+        return $this->render('main/services_list.html.twig', [
+            'searchForm' => $searchForm->createView(),
+            'services' => $allServices,
+            'categories' => $allCategories,
+            'observedItems' => [],
         ]);
-
     }
 
     #[Route('/zarezerwuj_usluge/{idUslugi}', name: 'app_zarezerwuj_usluge')]
     #[IsGranted('ROLE_USER')]
-    public function zarezerwujUsluge(
+    public function reserveService(
         int $idUslugi,
-        UslugiRepository $uslugi,
+        UslugiRepository $serviceRepository,
         Request $request,
-        EntityManagerInterface $entityManager,
-        DaneUzytkownikaRepository $daneUzytkownika,
-        MailerInterface $mailer
+        ReservationService $reservationService,
     ): Response
     {
+        $serviceId = $idUslugi;
+        $service = $serviceRepository->find($serviceId);
+        $userServices = $serviceRepository->findBy(['uzytkownik' => $this->getUser()]);
 
-        $usluga = $uslugi->find($idUslugi);
+        $reservation = new Rezerwacje();
 
-        $uslugiUzytkownika = $uslugi->findBy(['uzytkownik' => $this->getUser()]);
-
-        $rezerwacja = new Rezerwacje();
-
-        $form = $this->createForm(RezerwacjaFormType::class, $rezerwacja, [
-            'mojeUslugi' => $uslugiUzytkownika,
+        $reservationForm = $this->createForm(RezerwacjaFormType::class, $reservation, [
+            'mojeUslugi' => $userServices,
         ]);
-        $form->handleRequest($request);
+        $reservationForm->handleRequest($request);
 
-        
-
-        $uslugiArray = array_map(function ($usluga) {
+        $servicesArray = array_map(function ($service) {
             return [
-                'id' => $usluga->getId(),
-                'nazwaUslugi' => $usluga->getNazwaUslugi(),
-                'dataDodania' => $usluga->getDataDodania()->format('Y-m-d'),
-                'cena' => $usluga->getCena(),
-                'czyStawkaGodzinowa' => $usluga->isCzyStawkaGodzinowa(),
-                'glowneZdjecie' => $usluga->getGlowneZdjecie(),
+                'id' => $service->getId(),
+                'nazwaUslugi' => $service->getNazwaUslugi(),
+                'dataDodania' => $service->getDataDodania()->format('Y-m-d'),
+                'cena' => $service->getCena(),
+                'czyStawkaGodzinowa' => $service->isCzyStawkaGodzinowa(),
+                'glowneZdjecie' => $service->getGlowneZdjecie(),
                 'uzytkownik' => [
-                    'id' => $usluga->getUzytkownik()->getId(),
+                    'id' => $service->getUzytkownik()->getId(),
                     'daneUzytkownika' => [
-                        'miasto' => $usluga->getUzytkownik()->getDaneUzytkownika()->getMiasto(),
+                        'miasto' => $service->getUzytkownik()->getDaneUzytkownika()->getMiasto(),
                     ],
                 ],
             ];
-        }, $uslugiUzytkownika);
+        }, $userServices);
 
-        if($form->get('odKiedy')->getData() == "" && $request->request->has('zarezerwuj')){
+        if($reservationForm->get('odKiedy')->getData() == "" && $request->request->has('zarezerwuj')){
             $this->addFlash('error', 'Nie podałeś od kiedy chcesz zarezerować usługę!');
-            return $this->redirectToRoute('app_zarezerwuj_usluge', ['idUslugi' => $idUslugi]);
+            return $this->redirectToRoute('app_zarezerwuj_usluge', ['idUslugi' => $serviceId]);
         }
 
-        if($form->isSubmitted() && $form->isValid()){
+        if($reservationForm->isSubmitted() && $reservationForm->isValid()){
+            $reservation->setOdKiedy($reservationForm->get('odKiedy')->getData());
 
-            $rezerwacja->setOdKiedy($form->get('odKiedy')->getData());
-            $rezerwacja->setUzytkownikId($this->getUser());
-            $rezerwacja->setCzyAnulowana(false);
-            $rezerwacja->setCzyPotwierdzona(false);
-            $rezerwacja->setCzyOdrzucona(false);
-            $rezerwacja->setUslugaDoRezerwacji($usluga);
-            $rezerwacja->setDataZlozenia(new \DateTime());
-
-            $daneUzytkownika = $daneUzytkownika->findOneBy(['uzytkownik' => $this->getUser()]);
-
-            if($rezerwacja->getDoKiedy()){
-                $doKiedy = " do: " . $rezerwacja->getDoKiedy()->format('Y-m-d');
-            }else{
-                $doKiedy = "";
+            $currentUser = $this->getUser();
+            if (!$currentUser instanceof User) {
+                throw $this->createAccessDeniedException();
             }
 
-            $emailMsg = '<h2>Dokonano rezerwacji twojej usługi!</h2>' . $daneUzytkownika->getImie() . " " . $daneUzytkownika->getNazwisko() . ' zarezerwował: <a href="localhost/servicehub/public/index.php/service_view/' . $idUslugi . '">' . $usluga->getNazwaUslugi() . '</a><br> W terminie od: ' . $rezerwacja->getOdKiedy()->format('Y-m-d') . $doKiedy;
+            $isExchange = (bool) $reservationForm->get('wymiana')->getData();
+            $hasMessage = (bool) $reservationForm->get('czyWiadomosc')->getData();
 
-            $emailMsg2 = '<h2>Dokonałeś rezerwacji!</h2> Zarezerwowałeś: <a href="localhost/servicehub/public/index.php/service_view/' . $idUslugi . '">' . $usluga->getNazwaUslugi() . '</a><br> W terminie od: ' . $rezerwacja->getOdKiedy()->format('Y-m-d') . $doKiedy;
+            $emails = $reservationService->prepareReservationEmails(
+                $reservation,
+                $service,
+                $currentUser,
+                $serviceId,
+                $isExchange,
+                $hasMessage
+            );
 
-            if(!$form->get('wymiana')->getData()){
-                $rezerwacja->setUslugaNaWymiane(null);
-            }else{
-                $emailMsg = $emailMsg . '<br> Zaoferował wymianę w zamian za: <a href="localhost/servicehub/public/index.php/service_view/' . $rezerwacja->getUslugaNaWymiane()->getId() . '">' . $rezerwacja->getUslugaNaWymiane()->getNazwaUslugi() . '</a>';
-                
-                $emailMsg2 = $emailMsg2 . '<br> W zamian za: <a href="localhost/servicehub/public/index.php/service_view/' . $rezerwacja->getUslugaNaWymiane()->getId() . '">' . $rezerwacja->getUslugaNaWymiane()->getNazwaUslugi() . '</a>';
-            }
-
-            if($rezerwacja->isUdostepnijTelefon()){
-                $emailMsg = $emailMsg . '<br>Telefon: ' . $daneUzytkownika->getTelefon();
-            }
-
-            if(!$form->get('czyWiadomosc')->getData()){
-                $rezerwacja->setWiadomosc(null);
-            }else{
-                $emailMsg = $emailMsg . '<br><br><h4>Wiadomość do ciebie: </h4>' . $rezerwacja->getWiadomosc();
-            }
-            
-            $emailDoUslugodawcy = (new Email())
-                ->from('nor-replay@servicehub.com')
-                ->to($usluga->getUzytkownik()->getEmail())
-                ->subject('ServiceHub - zarezerwowano twoją usługę!')
-                ->text('Rezerwacja usługi')
-                ->html($emailMsg);
-
-            $emailDoCiebie = (new Email())
-                ->from('nor-replay@servicehub.com')
-                ->to($this->getUser()->getEmail())
-                ->subject('ServiceHub - zarezerwołeś usługę!')
-                ->text('Rezerwacja usługi')
-                ->html($emailMsg2);
-
-            $mailer->send($emailDoUslugodawcy);
-            $mailer->send($emailDoCiebie);
-
-            $entityManager->persist($rezerwacja);
-            $entityManager->flush();
+            $reservationService->sendEmails($emails['emailToProvider'], $emails['emailToCustomer']);
+            $reservationService->saveReservation($reservation, $service, $currentUser);
 
             $this->addFlash('success', 'Rezerwacja złożona pomyślnie!');
             return $this->redirectToRoute('app_rezerwacje');
-
         }
 
-
-        return $this->render('main/zarezerwuj_usluge.html.twig', [
-            'rezerwacjaForm' => $form,
-            'usluga' => $usluga,
-            'mojeUslugi' => $uslugiUzytkownika,
-            'uslugiJson' => json_encode($uslugiArray)
+        return $this->render('main/reserve_service.html.twig', [
+            'reservationForm' => $reservationForm,
+            'service' => $service,
+            'userServices' => $userServices,
+            'userServicesJson' => json_encode($servicesArray)
         ]);
-
     }
 
     #[Route('/follow/{idFollow}', name: 'app_follow')]
     #[IsGranted('ROLE_USER')]
     public function follow(
-        UslugiRepository $uslugi,
-        ObserwowaneRepository $obserwowane,
-        EntityManagerInterface $entityManager,
+        UslugiRepository $serviceRepository,
+        ObserwowaneRepository $observedRepository,
+        ObservedService $observedService,
         int $idFollow,
         Request $request,
     ): Response
     {
+        $followId = $idFollow;
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            throw $this->createAccessDeniedException();
+        }
 
-        $userId = $this->getUser()->getId();
-
-        $obserwowane = $obserwowane->findOneBy(['uzytkownik' => $userId, 'usluga' => $idFollow]);
-
-        if($obserwowane){
-            $entityManager->remove($obserwowane);
-            $entityManager->flush();
-            $this->addFlash('success', 'Usunięto z ulubionych!');
-        }else{
-            $obserwowane = new Obserwowane();
-
-            $usluga = $uslugi->findOneBy(['id' => $idFollow]);
-
-            $obserwowane->setUzytkownik($this->getUser());
-            $obserwowane->setUsluga($usluga);
-
-            $entityManager->persist($obserwowane);
-            $entityManager->flush();
+        $isAdded = $observedService->toggleObservedService($user, $followId, $observedRepository, $serviceRepository);
+        if($isAdded){
             $this->addFlash('success', 'Dodano do ulubionych!');
+        }else{
+            $this->addFlash('success', 'Usunięto z ulubionych!');
         }
 
         $referer = $request->headers->get('referer');
@@ -397,11 +247,9 @@ class MainController extends AbstractController
         if($referer && str_contains($referer, '/obserwowane')){
             return $this->redirectToRoute('app_obserwowane');
         }elseif($referer && str_contains($referer, '/service_view')){
-            return $this->redirectToRoute('app_service_view', ['idUslugi' => $idFollow]);
+            return $this->redirectToRoute('app_service_view', ['idUslugi' => $followId]);
         }else{
             return $this->redirectToRoute('app_skills_list');
         }
-
     }
-
 }

@@ -29,12 +29,12 @@
   
     <div id="wyszukaj">
 
-      {{ form_start(szybkieSzukanieForm, {'action': path('app_skills_list')}) }}
+      {{ form_start(quickSearchForm, {'action': path('app_skills_list')}) }}
 
-        {{ form_widget(szybkieSzukanieForm.nazwaUslugi, {'attr': {'class': 'inputwyszukaj', 'placeholder': 'ZNAJDŹ COŚ, CO CIĘ INTERESUJE'}}) }}
+        {{ form_widget(quickSearchForm.nazwaUslugi, {'attr': {'class': 'inputwyszukaj', 'placeholder': 'ZNAJDŹ COŚ, CO CIĘ INTERESUJE'}}) }}
         <button type="submit" id="btnwyszukaj">WYSZUKAJ</button>
 
-      {{ form_end(szybkieSzukanieForm) }}
+      {{ form_end(quickSearchForm) }}
     
     </div>
 
@@ -47,27 +47,27 @@
   <div id="promowaneuslugi">
     
     <div id="boxlewo">
-      <a href="{{ path('app_service_view', {idUslugi: losoweUslugi[0].id}) }} ">
+      <a href="{{ path('app_service_view', {idUslugi: randomServices[0].id}) }} ">
         <div class="uslugilewo">
-          {% set imagePath = 'zdjeciaUslug/' ~ losoweUslugi[0].uzytkownik.id ~ '/' ~ losoweUslugi[0].id ~ '/' ~ losoweUslugi[0].glowneZdjecie %}
+          {% set imagePath = 'zdjeciaUslug/' ~ randomServices[0].uzytkownik.id ~ '/' ~ randomServices[0].id ~ '/' ~ randomServices[0].glowneZdjecie %}
           <img class="imgserviceleft" src="{{ asset(imagePath) }}">
           <div class="serivceopisleft">
-            <div class="serviceopis textleft">{{ losoweUslugi[0].nazwaUslugi }}</div>
-            <div class="servicecena textleft">{{ losoweUslugi[0].cena }} PLN{% if losoweUslugi[0].czyStawkaGodzinowa %}/H{% endif %}</div>
-            <div class="servicedata textleft">{{ losoweUslugi[0].uzytkownik.daneUzytkownika.miasto }}<br>DODANO {{ losoweUslugi[0].dataDodania|date('d.m.Y') }}</div>   
+            <div class="serviceopis textleft">{{ randomServices[0].nazwaUslugi }}</div>
+            <div class="servicecena textleft">{{ randomServices[0].cena }} PLN{% if randomServices[0].czyStawkaGodzinowa %}/H{% endif %}</div>
+            <div class="servicedata textleft">{{ randomServices[0].uzytkownik.daneUzytkownika.miasto }}<br>DODANO {{ randomServices[0].dataDodania|date('d.m.Y') }}</div>   
           </div>
         
         </div>
       </a>
 
-      <a href="{{ path('app_service_view', {idUslugi: losoweUslugi[1].id}) }} ">
+      <a href="{{ path('app_service_view', {idUslugi: randomServices[1].id}) }} ">
         <div class="uslugilewo mgtop">
-          {% set imagePath = 'zdjeciaUslug/' ~ losoweUslugi[1].uzytkownik.id ~ '/' ~ losoweUslugi[1].id ~ '/' ~ losoweUslugi[1].glowneZdjecie %}
+          {% set imagePath = 'zdjeciaUslug/' ~ randomServices[1].uzytkownik.id ~ '/' ~ randomServices[1].id ~ '/' ~ randomServices[1].glowneZdjecie %}
           <img class="imgserviceleft" src="{{ asset(imagePath) }}">
           <div class="serivceopisleft">
-            <div class="serviceopis textleft">{{ losoweUslugi[1].nazwaUslugi }}</div>
-            <div class="servicecena textleft">{{ losoweUslugi[1].cena }} PLN{% if losoweUslugi[1].czyStawkaGodzinowa %}/H{% endif %}</div>
-            <div class="servicedata textleft">{{ losoweUslugi[1].uzytkownik.daneUzytkownika.miasto }}<br>DODANO {{ losoweUslugi[1].dataDodania|date('d.m.Y') }}</div>   
+            <div class="serviceopis textleft">{{ randomServices[1].nazwaUslugi }}</div>
+            <div class="servicecena textleft">{{ randomServices[1].cena }} PLN{% if randomServices[1].czyStawkaGodzinowa %}/H{% endif %}</div>
+            <div class="servicedata textleft">{{ randomServices[1].uzytkownik.daneUzytkownika.miasto }}<br>DODANO {{ randomServices[1].dataDodania|date('d.m.Y') }}</div>   
           </div>
         
         </div>
@@ -77,27 +77,27 @@
     <div id="kreskaczarna"></div>
 
     <div id="boxprawo">
-      <a href="{{ path('app_service_view', {idUslugi: losoweUslugi[2].id}) }} ">
+      <a href="{{ path('app_service_view', {idUslugi: randomServices[2].id}) }} ">
         <div class="uslugiprawo">
-          {% set imagePath = 'zdjeciaUslug/' ~ losoweUslugi[2].uzytkownik.id ~ '/' ~ losoweUslugi[2].id ~ '/' ~ losoweUslugi[2].glowneZdjecie %}
+          {% set imagePath = 'zdjeciaUslug/' ~ randomServices[2].uzytkownik.id ~ '/' ~ randomServices[2].id ~ '/' ~ randomServices[2].glowneZdjecie %}
           <img class="imgserviceright" src="{{ asset(imagePath) }}">
           <div class="serivceopisright">
-            <div class="serviceopis textright">{{ losoweUslugi[2].nazwaUslugi }}</div>
-            <div class="servicecena textright">{{ losoweUslugi[2].cena }} PLN{% if losoweUslugi[2].czyStawkaGodzinowa %}/H{% endif %}</div>
-            <div class="servicedata textright">{{ losoweUslugi[2].uzytkownik.daneUzytkownika.miasto }}<br>DODANO {{ losoweUslugi[2].dataDodania|date('d.m.Y') }}</div>   
+            <div class="serviceopis textright">{{ randomServices[2].nazwaUslugi }}</div>
+            <div class="servicecena textright">{{ randomServices[2].cena }} PLN{% if randomServices[2].czyStawkaGodzinowa %}/H{% endif %}</div>
+            <div class="servicedata textright">{{ randomServices[2].uzytkownik.daneUzytkownika.miasto }}<br>DODANO {{ randomServices[2].dataDodania|date('d.m.Y') }}</div>   
           </div>
         
         </div>
       </a>
 
-      <a href="{{ path('app_service_view', {idUslugi: losoweUslugi[3].id}) }} ">
+      <a href="{{ path('app_service_view', {idUslugi: randomServices[3].id}) }} ">
         <div class="uslugiprawo mgtop">
-          {% set imagePath = 'zdjeciaUslug/' ~ losoweUslugi[3].uzytkownik.id ~ '/' ~ losoweUslugi[3].id ~ '/' ~ losoweUslugi[3].glowneZdjecie %}
+          {% set imagePath = 'zdjeciaUslug/' ~ randomServices[3].uzytkownik.id ~ '/' ~ randomServices[3].id ~ '/' ~ randomServices[3].glowneZdjecie %}
           <img class="imgserviceright" src="{{ asset(imagePath) }}">
           <div class="serivceopisright">
-            <div class="serviceopis textright">{{ losoweUslugi[3].nazwaUslugi }}</div>
-            <div class="servicecena textright">{{ losoweUslugi[3].cena }} PLN{% if losoweUslugi[3].czyStawkaGodzinowa %}/H{% endif %}</div>
-            <div class="servicedata textright">{{ losoweUslugi[3].uzytkownik.daneUzytkownika.miasto }}<br>DODANO {{ losoweUslugi[3].dataDodania|date('d.m.Y') }}</div>   
+            <div class="serviceopis textright">{{ randomServices[3].nazwaUslugi }}</div>
+            <div class="servicecena textright">{{ randomServices[3].cena }} PLN{% if randomServices[3].czyStawkaGodzinowa %}/H{% endif %}</div>
+            <div class="servicedata textright">{{ randomServices[3].uzytkownik.daneUzytkownika.miasto }}<br>DODANO {{ randomServices[3].dataDodania|date('d.m.Y') }}</div>   
           </div>
         
         </div>
@@ -112,7 +112,7 @@
     
       <div class="circle"><img src="{{ asset('images/klients.png') }}"></div>
       <div class="statopis">
-        <div class="statnumber">{{ uzytkownicy|length }}</div>
+        <div class="statnumber">{{ users|length }}</div>
         <div class="statname">ZADOWOLONYCH UŻYTKOWNIKÓW</div>
       </div>
     
@@ -124,7 +124,7 @@
     
       <div class="circle"><img src="{{ asset('images/calender.png') }}"></div>
       <div class="statopis">
-        <div class="statnumber">{{ rezerwacje|length }}</div>
+        <div class="statnumber">{{ reservations|length }}</div>
         <div class="statname">WYKONANYCH REZERWACJI</div>
       </div>
     
@@ -136,7 +136,7 @@
     
       <div class="circle"><img src="{{ asset('images/service.png') }}"></div>
       <div class="statopis">
-        <div class="statnumber">{{ wszystkieUslugi|length }}</div>
+        <div class="statnumber">{{ allServices|length }}</div>
         <div class="statname">DOSTĘPNYCH USŁUG</div>
       </div>
     

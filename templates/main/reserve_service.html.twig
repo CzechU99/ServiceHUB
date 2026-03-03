@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="{{ asset('css/zarezerwuj_usluge.css') }}">
 {% endblock %}
 
-{% set imagePath = 'zdjeciaUslug/' ~ usluga.uzytkownik.id ~ '/' ~ usluga.id ~ '/' ~ usluga.glowneZdjecie %}
+{% set imagePath = 'zdjeciaUslug/' ~ service.uzytkownik.id ~ '/' ~ service.id ~ '/' ~ service.glowneZdjecie %}
 
 {% block body %}
 
@@ -17,7 +17,7 @@
   
   <div id="search">
 
-    <div class="back"><a href="{{ path('app_service_view', {idUslugi: usluga.id}) }} "><div class="backdiv"><span class="backarrow">&#10094;</span>&nbsp;&nbsp;&nbsp;WRÓĆ</div></a></div>
+    <div class="back"><a href="{{ path('app_service_view', {idUslugi: service.id}) }} "><div class="backdiv"><span class="backarrow">&#10094;</span>&nbsp;&nbsp;&nbsp;WRÓĆ</div></a></div>
     
   </div>
 
@@ -42,12 +42,12 @@
         <img class="zdjecie" src="{{ asset(imagePath) }}" onerror="this.src='{{ asset("images/alt_image.jpg") }}'" alt="Brak zdjęcia!">
 
         <div class="opis">
-          <div class="tytul">{{ usluga.nazwaUslugi|upper }}</div>
+          <div class="tytul">{{ service.nazwaUslugi|upper }}</div>
           
           <div class="uslugainfo">
-            <div class="lokalizacja">{{ usluga.uzytkownik.daneUzytkownika.miasto|upper }}</div>
-            <div class="data">DODANO {{ usluga.dataDodania|date('d.m.Y') }}</div>
-            <div class="cena">{{ usluga.cena }} PLN{% if usluga.czyStawkaGodzinowa == 1 %}/H{% endif %}</div>
+            <div class="lokalizacja">{{ service.uzytkownik.daneUzytkownika.miasto|upper }}</div>
+            <div class="data">DODANO {{ service.dataDodania|date('d.m.Y') }}</div>
+            <div class="cena">{{ service.cena }} PLN{% if service.czyStawkaGodzinowa == 1 %}/H{% endif %}</div>
           </div>
         </div>
 
@@ -73,45 +73,45 @@
 
     </div>
 
-    {{ form_start(rezerwacjaForm) }}
+    {{ form_start(reservationForm) }}
 
       <div class="boxes">
 
-        {% if usluga.czyWymiana == 0 %}
+        {% if service.czyWymiana == 0 %}
           <div class="empty"></div>
         {% endif %}
 
-        <div class="wiadomoscbox">NAPISZ WIADOMOŚĆ: {{ form_widget(rezerwacjaForm.czyWiadomosc, {'attr': {'class': 'chck_msg event1'}}) }}</div>
+        <div class="wiadomoscbox">NAPISZ WIADOMOŚĆ: {{ form_widget(reservationForm.czyWiadomosc, {'attr': {'class': 'chck_msg event1'}}) }}</div>
 
-        {% if usluga.czyWymiana == 1 %}
-          <div class="wiadomoscbox ml">WYMIANA: {{ form_widget(rezerwacjaForm.wymiana, {'attr': {'class': 'chck_msg event2'}}) }}</div>
+        {% if service.czyWymiana == 1 %}
+          <div class="wiadomoscbox ml">WYMIANA: {{ form_widget(reservationForm.wymiana, {'attr': {'class': 'chck_msg event2'}}) }}</div>
         {% else %}
-          <div class="wiadomoscbox ml display">WYMIANA: {{ form_widget(rezerwacjaForm.wymiana, {'attr': {'class': 'chck_msg event2 display'}}) }}</div>
+          <div class="wiadomoscbox ml display">WYMIANA: {{ form_widget(reservationForm.wymiana, {'attr': {'class': 'chck_msg event2 display'}}) }}</div>
         {% endif %}
 
-        <div class="wiadomoscbox ml">UDOSTĘPNIJ NR TELEFONU: {{ form_widget(rezerwacjaForm.udostepnijTelefon, {'attr': {'class': 'chck_msg'}}) }}</div>
+        <div class="wiadomoscbox ml">UDOSTĘPNIJ NR TELEFONU: {{ form_widget(reservationForm.udostepnijTelefon, {'attr': {'class': 'chck_msg'}}) }}</div>
 
       </div>
 
       <div class="box">
       
-        {{ form_widget(rezerwacjaForm.uslugaNaWymiane, {'attr': {'class': 'select', 'data-moje-uslugi': uslugiJson }} ) }}
+        {{ form_widget(reservationForm.uslugaNaWymiane, {'attr': {'class': 'select', 'data-moje-uslugi': userServicesJson }} ) }}
 
       </div>
 
       <div class="kalendarz">
 
-        {{ form_widget(rezerwacjaForm.odKiedy, {'attr': {'class': 'form-control mr rez unset'}, 'id': 'datePicker'} )}}
+        {{ form_widget(reservationForm.odKiedy, {'attr': {'class': 'form-control mr rez unset'}, 'id': 'datePicker'} )}}
         <div class="gap"></div>
-        {{ form_widget(rezerwacjaForm.doKiedy, {'attr': {'class': 'form-control rez unset'}, 'id': 'datePicker'} )}}
+        {{ form_widget(reservationForm.doKiedy, {'attr': {'class': 'form-control rez unset'}, 'id': 'datePicker'} )}}
 
       </div>
 
-      {{ form_widget(rezerwacjaForm.wiadomosc, {'attr': {'class': 'wiadomość unset'}}) }}
+      {{ form_widget(reservationForm.wiadomosc, {'attr': {'class': 'wiadomość unset'}}) }}
 
       <button type="submit" class="btndodaj" name="zarezerwuj">ZAREZERWUJ</button>
 
-    {{ form_end(rezerwacjaForm) }}
+    {{ form_end(reservationForm) }}
 
   </div>
 
@@ -161,7 +161,7 @@
     });
 
     const selectElement = document.querySelector('.select');
-    const mojeUslugi = JSON.parse(selectElement.getAttribute('data-moje-uslugi'));
+    const userServices = JSON.parse(selectElement.getAttribute('data-moje-uslugi'));
     const ogloszenieDiv = document.getElementById('ogloszenie');
     const tytulDiv = document.getElementById('ogloszenie-tytul');
     const lokalizacjaDiv = document.getElementById('ogloszenie-lokalizacja');
@@ -170,13 +170,13 @@
     const imgElement = document.getElementById('ogloszenie-img');
 
     function updateOgloszenie(index) {
-      usluga = mojeUslugi[index];
-      if (usluga) {
-        tytulDiv.textContent = usluga.nazwaUslugi;
-        lokalizacjaDiv.textContent = usluga.uzytkownik.daneUzytkownika.miasto;
-        dataDiv.textContent = `DODANO ${new Date(usluga.dataDodania).toLocaleDateString('pl-PL')}`;
-        cenaDiv.textContent = `${usluga.cena} PLN${usluga.czyStawkaGodzinowa ? '/H' : ''}`;
-        imgElement.src = `/servicehub/public/zdjeciaUslug/${usluga.uzytkownik.id}/${usluga.id}/${usluga.glowneZdjecie}`;
+      const serviceItem = userServices[index];
+      if (serviceItem) {
+        tytulDiv.textContent = serviceItem.nazwaUslugi;
+        lokalizacjaDiv.textContent = serviceItem.uzytkownik.daneUzytkownika.miasto;
+        dataDiv.textContent = `DODANO ${new Date(serviceItem.dataDodania).toLocaleDateString('pl-PL')}`;
+        cenaDiv.textContent = `${serviceItem.cena} PLN${serviceItem.czyStawkaGodzinowa ? '/H' : ''}`;
+        imgElement.src = `/servicehub/public/zdjeciaUslug/${serviceItem.uzytkownik.id}/${serviceItem.id}/${serviceItem.glowneZdjecie}`;
       }
     }
 
