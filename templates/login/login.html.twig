@@ -33,11 +33,11 @@
                         <div class="success">{{ flash_msg|upper }}</div>
                     {% endfor %}
 
-                    {% if error %}
+                    {% if authenticationError %}
                         <div class="error">NIEPROWIDŁOWE EMAIL LUB HASŁO</div>
                     {% endif %}
 
-                    {% if not error %}
+                    {% if not authenticationError %}
                         {% for error in loginForm.vars.errors.form.getErrors(true) %}
                             {% if loop.index == 1 %}
                                 <div class="error">{{ error.message|upper }}</div>

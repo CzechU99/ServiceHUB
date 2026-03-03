@@ -19,29 +19,28 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-class LoginController extends AbstractController
+class AuthController extends AbstractController
 {
     #[Route('/login', name: 'app_login')]
-    public function index(
-        AuthenticationUtils $utils,
+    public function login(
+        AuthenticationUtils $authenticationUtils,
         Request $request,
     ): Response
     {
-
         if($this->getUser()){
             return $this->redirectToRoute('app_skills_list'); 
         }
 
-        $form = $this->createForm(LoginFormType::class);
-        $form->handleRequest($request);
+        $loginForm = $this->createForm(LoginFormType::class);
+        $loginForm->handleRequest($request);
 
-        $lastUsername = $utils->getLastUsername();
-        $error = $utils->getLastAuthenticationError();
+        $lastUsername = $authenticationUtils->getLastUsername();
+        $authenticationError = $authenticationUtils->getLastAuthenticationError();
 
-        return $this->render('login/index.html.twig', [
-            'loginForm' => $form,
+        return $this->render('login/login.html.twig', [
+            'loginForm' => $loginForm,
             'lastUsername' => $lastUsername,
-            'error' => $error,
+            'authenticationError' => $authenticationError,
         ]);
     }
 
@@ -51,21 +50,20 @@ class LoginController extends AbstractController
     }
 
     #[Route('/send_email', name: 'app_send_email')]
-    public function sendEmail(
-        UserRepository $users,
+    public function sendPasswordResetEmail(
+        UserRepository $userRepository,
         MailerInterface $mailer,
         Request $request,
         EntityManagerInterface $entityManager,
     ): Response
     {
+        $passwordReminderForm = $this->createForm(PasswordReminderFormType::class);
+        $passwordReminderForm->handleRequest($request);
 
-        $form = $this->createForm(PasswordReminderFormType::class);
-        $form->handleRequest($request);
+        if ($passwordReminderForm->isSubmitted() && $passwordReminderForm->isValid()) {
 
-        if ($form->isSubmitted() && $form->isValid()) {
-
-            $email = $form->get('email')->getData();
-            $user = $users->findOneBy(['email' => $email]);
+            $email = $passwordReminderForm->get('email')->getData();
+            $user = $userRepository->findOneBy(['email' => $email]);
 
             if ($user) {
                 $resetToken = bin2hex(random_bytes(32));
@@ -79,50 +77,48 @@ class LoginController extends AbstractController
 
                 $resetLink = $this->generateUrl('app_reset_password', ['token' => $resetToken], UrlGeneratorInterface::ABSOLUTE_URL);
                 
-                $emailMessage = (new Email())
+                $resetEmail = (new Email())
                     ->from('no-reply@servicehub.com')
                     ->to($user->getEmail())
                     ->subject('Zresetuj swoje hasło')
                     ->html('<p>Kliknij poniższy link, aby zresetować swoje hasło:</p><p><a href="' . $resetLink . '">Zresetuj hasło</a></p>');
 
-                $mailer->send($emailMessage);
+                $mailer->send($resetEmail);
 
                 $this->addFlash('success', 'Wysłano wiadomość z resetowaniem hasła!');
                 return $this->redirectToRoute('app_login');
             }
 
             $this->addFlash('error', 'Nie znaleziono takiego adresu e-mail!');
-
         }
 
-        return $this->render('login/email_verify.html.twig', [
-            'form' => $form->createView(),
+        return $this->render('login/forgot_password.html.twig', [
+            'passwordReminderForm' => $passwordReminderForm->createView(),
         ]);
-
     }
 
     #[Route('/reset_password/{token}', name: 'app_reset_password')]
     public function resetPassword(
         string $token,
         Request $request,
-        UserRepository $users,
+        UserRepository $userRepository,
         UserPasswordHasherInterface $userPasswordHasher,
         EntityManagerInterface $entityManager, 
     ): Response
     {
-        $user = $users->findOneBy(['resetToken' => $token]);
+        $user = $userRepository->findOneBy(['resetToken' => $token]);
 
         if (!$user || $user->getResetTokenWaznosc() < new \DateTime()) {
             $this->addFlash('error', 'Token jest nieprawidłowy lub wygasł!');
             return $this->redirectToRoute('app_send_email');
         }
 
-        $form = $this->createForm(ResetPasswordFormType::class);
-        $form->handleRequest($request);
+        $resetPasswordForm = $this->createForm(ResetPasswordFormType::class);
+        $resetPasswordForm->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
+        if ($resetPasswordForm->isSubmitted() && $resetPasswordForm->isValid()) {
 
-            $newPassword = $form->get('password')->getData();
+            $newPassword = $resetPasswordForm->get('password')->getData();
             $encodedPassword = $userPasswordHasher->hashPassword($user, $newPassword);
             $user->setPassword($encodedPassword);
 
@@ -137,9 +133,8 @@ class LoginController extends AbstractController
         }
 
         return $this->render('login/reset_password.html.twig', [
-            'form' => $form->createView(),
+            'resetPasswordForm' => $resetPasswordForm->createView(),
         ]);
-
     }
 
     #[Route('/register', name: 'app_register')]
@@ -149,20 +144,19 @@ class LoginController extends AbstractController
         EntityManagerInterface $entityManager
     ): Response
     {
-
         if($this->getUser()){
             return $this->redirectToRoute('app_skills_list'); 
         }
 
         $user = new User();
-        $form = $this->createForm(RegistrationFormType::class, $user);
-        $form->handleRequest($request);
+        $registrationForm = $this->createForm(RegistrationFormType::class, $user);
+        $registrationForm->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
+        if ($registrationForm->isSubmitted() && $registrationForm->isValid()) {
             $user->setPassword(
                 $userPasswordHasher->hashPassword(
                     $user,
-                    $form->get('plainPassword')->getData()
+                    $registrationForm->get('plainPassword')->getData()
                 )
             );
 
@@ -182,7 +176,7 @@ class LoginController extends AbstractController
         }
 
         return $this->render('login/register.html.twig', [
-            'registrationForm' => $form->createView(),
+            'registrationForm' => $registrationForm->createView(),
         ]);
     }
     
