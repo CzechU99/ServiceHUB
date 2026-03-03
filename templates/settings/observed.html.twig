@@ -34,38 +34,38 @@
 
   <div class="container">
 
-    {% for obserwowanaUsluga in obserwowaneUslugi %}
-      <a class="link" href="{{ path('app_service_view', {idUslugi: obserwowanaUsluga.id}) }}">
+    {% for observedService in observedServices %}
+      <a class="link" href="{{ path('app_service_view', {idUslugi: observedService.id}) }}">
         <div class="ogloszenie 
-          {% if obserwowaneUslugi|length == 1 %}
+          {% if observedServices|length == 1 %}
             top last
-          {% elseif loop.first and obserwowaneUslugi|length == 2 %}
+          {% elseif loop.first and observedServices|length == 2 %}
             top
-          {% elseif loop.last and obserwowaneUslugi|length == 2 %}
+          {% elseif loop.last and observedServices|length == 2 %}
             last
-          {% elseif loop.first and obserwowaneUslugi|length >= 3 %}
+          {% elseif loop.first and observedServices|length >= 3 %}
             top
-          {% elseif loop.last and obserwowaneUslugi|length >= 3 %}
+          {% elseif loop.last and observedServices|length >= 3 %}
             last
           {% endif %}">
           
-          {% set imagePath = 'zdjeciaUslug/' ~ obserwowanaUsluga.uzytkownik.id ~ '/' ~ obserwowanaUsluga.id ~ '/' ~ obserwowanaUsluga.glowneZdjecie %}
+          {% set imagePath = 'zdjeciaUslug/' ~ observedService.uzytkownik.id ~ '/' ~ observedService.id ~ '/' ~ observedService.glowneZdjecie %}
           <div class="center"><img class="zdjecie" src="{{ asset(imagePath) }}" onerror="this.src='{{ asset("images/alt_image.jpg") }}'" alt="Brak zdjęcia!"></div>
 
           <div class="opis">
-            <div class="tytul">{{ obserwowanaUsluga.nazwaUslugi|upper }}</div>
-            <div class="lokalizacja">{{ obserwowanaUsluga.uzytkownik.daneUzytkownika.miasto|upper }}</div>
-            <div class="data">DODANO {{ obserwowanaUsluga.dataDodania|date('d.m.Y') }}</div>
+            <div class="tytul">{{ observedService.nazwaUslugi|upper }}</div>
+            <div class="lokalizacja">{{ observedService.uzytkownik.daneUzytkownika.miasto|upper }}</div>
+            <div class="data">DODANO {{ observedService.dataDodania|date('d.m.Y') }}</div>
           </div>
           <div class="prawo">
             
             <div class="follow">
-              <a href="{{ path('app_follow', {idFollow: obserwowanaUsluga.id}) }}">
+              <a href="{{ path('app_follow', {idFollow: observedService.id}) }}">
                 <img class="followicon" src="{{ asset('images/unfollow.webp') }}">
               </a>
             </div>
             
-            <div class="cena">{{ obserwowanaUsluga.cena }} PLN{% if obserwowanaUsluga.czyStawkaGodzinowa %}/H{% endif %}</div>
+            <div class="cena">{{ observedService.cena }} PLN{% if observedService.czyStawkaGodzinowa %}/H{% endif %}</div>
 
           </div>
         </div>

@@ -81,7 +81,7 @@
 
   <div class="container">
 
-    {% for rezerwacja in rezerwacje %}
+    {% for rezerwacja in reservations %}
   
       {% if rezerwacja.uslugaNaWymiane is null and rezerwacja.uzytkownikId.id == app.user.id %}
 

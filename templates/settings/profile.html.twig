@@ -25,7 +25,7 @@
     <div class="flashinfo">
 
       {% set break = false %}
-      {% for child in daneForm.children %}
+      {% for child in profileForm.children %}
         {% for error in child.vars.errors %}
           {% if not break %}
             <div class="error-message">
@@ -48,9 +48,9 @@
 
     <div id="all">
 
-      {{ form_start(daneForm) }}
+      {{ form_start(profileForm) }}
 
-        {{ form_errors(daneForm) }}
+        {{ form_errors(profileForm) }}
 
         <div class="box">
         
@@ -61,9 +61,9 @@
 
         <div class="box">
 
-          {{ form_widget(daneForm.imie, {'attr': {'class': 'dane left', 'placeholder': 'PODAJ IMIE...'}}) }}
+          {{ form_widget(profileForm.imie, {'attr': {'class': 'dane left', 'placeholder': 'PODAJ IMIE...'}}) }}
 
-          {{ form_widget(daneForm.nazwisko, {'attr': {'class': 'dane right', 'placeholder': 'PODAJ NAZWISKO...'}}) }}
+          {{ form_widget(profileForm.nazwisko, {'attr': {'class': 'dane right', 'placeholder': 'PODAJ NAZWISKO...'}}) }}
 
         </div>
 
@@ -76,8 +76,8 @@
 
         <div class="box">
 
-          {{ form_widget(daneForm.miejscowosc, {'attr': {'class': 'dane left', 'placeholder': 'PODAJ ULICE...'}}) }}
-          {{ form_widget(daneForm.numer_domu, {'attr': {'class': 'dane right', 'placeholder': 'PODAJ NUMER DOMU...'}}) }}
+          {{ form_widget(profileForm.miejscowosc, {'attr': {'class': 'dane left', 'placeholder': 'PODAJ ULICE...'}}) }}
+          {{ form_widget(profileForm.numer_domu, {'attr': {'class': 'dane right', 'placeholder': 'PODAJ NUMER DOMU...'}}) }}
 
         </div>
 
@@ -90,8 +90,8 @@
 
         <div class="box">
 
-          {{ form_widget(daneForm.kod_pocztowy, {'attr': {'class': 'dane left', 'placeholder': 'PODAJ KOD POCZTOWY...'}}) }}
-          {{ form_widget(daneForm.miasto, {'attr': {'class': 'dane right', 'placeholder': 'PODAJ MISATO...'}}) }}
+          {{ form_widget(profileForm.kod_pocztowy, {'attr': {'class': 'dane left', 'placeholder': 'PODAJ KOD POCZTOWY...'}}) }}
+          {{ form_widget(profileForm.miasto, {'attr': {'class': 'dane right', 'placeholder': 'PODAJ MISATO...'}}) }}
 
         </div>
 
@@ -103,13 +103,13 @@
 
         <div class="box">
 
-          {{ form_widget(daneForm.telefon, {'attr': {'class': 'dane left', 'placeholder': 'PODAJ TELEFON Z PREFIKSEM...'}}) }}
+          {{ form_widget(profileForm.telefon, {'attr': {'class': 'dane left', 'placeholder': 'PODAJ TELEFON Z PREFIKSEM...'}}) }}
 
         </div>
 
         <button type="submit" id="btnzaloguj">ZAPISZ</button>
 
-      {{ form_end(daneForm) }}
+      {{ form_end(profileForm) }}
 
     </div>
   
